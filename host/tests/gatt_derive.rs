@@ -10,10 +10,10 @@ mod common;
 const CONNECTIONS_MAX: usize = 1;
 const L2CAP_CHANNELS_MAX: usize = 3;
 
-const SERVICE_UUID: Uuid = Uuid::new_long([
+const SERVICE_UUID: BluetoothUuid128 = BluetoothUuid128::from_le_bytes([
     0x00, 0x00, 0x10, 0x00, 0xb0, 0xcd, 0x11, 0xec, 0x87, 0x1f, 0xd4, 0x5d, 0xdf, 0x13, 0x88, 0x40,
 ]);
-const VALUE_UUID: Uuid = Uuid::new_long([
+const VALUE_UUID: BluetoothUuid128 = BluetoothUuid128::from_le_bytes([
     0x00, 0x00, 0x10, 0x01, 0xb0, 0xcd, 0x11, 0xec, 0x87, 0x1f, 0xd4, 0x5d, 0xdf, 0x13, 0x88, 0x40,
 ]);
 
@@ -201,12 +201,12 @@ async fn gatt_client_server() {
                     }
                     r = async {
                         println!("[central] discovering services");
-                        let services = client.services_by_uuid(&SERVICE_UUID).await.unwrap();
+                        let services = client.services_by_uuid(&SERVICE_UUID.into()).await.unwrap();
 
                         let service = services.first().unwrap().clone();
 
                         println!("[central] service discovered successfully");
-                        let c: Characteristic<u8> = client.characteristic_by_uuid(&service, &VALUE_UUID).await.unwrap();
+                        let c: Characteristic<u8> = client.characteristic_by_uuid(&service, &VALUE_UUID.into()).await.unwrap();
 
                         let mut data = [0; 1];
                         client.read_characteristic(&c, &mut data[..]).await.unwrap();

@@ -158,7 +158,7 @@ impl AttributeData<'_> {
                 Ok(len)
             }
             Self::Service { uuid, .. } => {
-                let val = uuid.as_raw();
+                let val = uuid.as_le_slice();
                 if offset > val.len() {
                     return Ok(0);
                 }
@@ -190,7 +190,7 @@ impl AttributeData<'_> {
                 Ok(2)
             }
             Self::Declaration { props, handle, uuid } => {
-                let val = uuid.as_raw();
+                let val = uuid.as_le_slice();
                 if offset > val.len() + 3 {
                     return Ok(0);
                 }
@@ -284,7 +284,7 @@ impl AttributeData<'_> {
         Ok(Self::Declaration {
             props: CharacteristicProps(r.read()?),
             handle: r.read()?,
-            uuid: Uuid::try_from(r.remaining())?,
+            uuid: Uuid::from_le_slice(r.remaining())?,
         })
     }
 }
@@ -563,7 +563,7 @@ impl<'d, M: RawMutex, const MAX: usize> ServiceBuilder<'_, 'd, M, MAX> {
                 data: AttributeData::Declaration {
                     props,
                     handle: value_handle,
-                    uuid: uuid.clone(),
+                    uuid,
                 },
             });
 

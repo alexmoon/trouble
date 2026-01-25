@@ -669,7 +669,7 @@ impl<'values, M: RawMutex, P: PacketPool, const ATT_MAX: usize, const CCCD_MAX: 
         attr_value: &[u8],
     ) -> Result<usize, codec::Error> {
         let mut w = WriteCursor::new(buf);
-        let attr_type = Uuid::new_short(attr_type);
+        let attr_type = Uuid::from_u16(attr_type);
 
         w.write(att::ATT_FIND_BY_TYPE_VALUE_RSP)?;
         self.att_table.iterate_from(start, |mut it| {
@@ -680,8 +680,8 @@ impl<'values, M: RawMutex, P: PacketPool, const ATT_MAX: usize, const CCCD_MAX: 
                         last_handle_in_group,
                     } = &att.data
                     {
-                        if uuid.as_raw() == attr_value {
-                            if w.available() < 4 + uuid.as_raw().len() {
+                        if uuid.as_le_slice() == attr_value {
+                            if w.available() < 4 + uuid.as_le_slice().len() {
                                 break;
                             }
                             w.write(handle)?;
@@ -710,23 +710,34 @@ impl<'values, M: RawMutex, P: PacketPool, const ATT_MAX: usize, const CCCD_MAX: 
         let (mut header, mut body) = w.split(2)?;
 
         header.write(att::ATT_FIND_INFORMATION_RSP)?;
-        let mut t = 0;
+        let mut format: u8 = 0;
 
         self.att_table.iterate_from(start, |mut it| {
             while let Some((handle, att)) = it.next() {
                 if handle <= end {
-                    if t == 0 {
-                        t = att.uuid.get_type();
-                    } else if t != att.uuid.get_type() {
+                    let att_format = match &att.uuid {
+                        Uuid::Uuid16(_) => 1,
+                        Uuid::Uuid32(_) => 0, // should never happen
+                        Uuid::Uuid128(_) => 2,
+                    };
+
+                    if format == 0 {
+                        format = att_format;
+                    } else if format != att_format {
                         break;
                     }
                     body.write(handle)?;
-                    body.append(att.uuid.as_raw())?;
+                    body.append(att.uuid.as_le_slice())?;
+
+                    if att_format != 0 {
+                        body.write(handle)?;
+                        body.append(att.uuid.as_le_slice())?;
+                    }
                 }
             }
             Ok::<(), codec::Error>(())
         })?;
-        header.write(t)?;
+        header.write(format)?;
 
         if body.len() > 2 {
             Ok(header.len() + body.len())
@@ -936,7 +947,7 @@ mod tests {
         // INFO  main_ble::ble_bas_peripheral] [gatt-attclient]: ReadByGroupType { start: 97, end: 65535, group_type: Uuid16([0, 40]) }
         // In trace, the "group_type: Uuid16([0, 40]) }" is decimal, so this becomes group type 0x2800, which is the
         // primary service group.
-        let primary_service_group_type = Uuid::new_short(0x2800);
+        let primary_service_group_type = Uuid::from_u16(0x2800);
 
         let _ = env_logger::try_init();
         const MAX_ATTRIBUTES: usize = 1024;
@@ -956,26 +967,26 @@ mod tests {
             // Add a first service, contents don't really matter, but the issue doesn't manifest without this.
             {
                 let svc = table.add_service(Service {
-                    uuid: Uuid::new_long([10; 16]),
+                    uuid: Uuid::from([10; 16]),
                 });
             }
 
             // Add an interior service that has a varying length.
             {
                 let mut svc = table.add_service(Service {
-                    uuid: Uuid::new_long([0; 16]),
+                    uuid: Uuid::from([0; 16]),
                 });
 
                 for c in 0..interior_handle_count {
                     let _service_instance = svc
-                        .add_characteristic_ro::<[u8; 2], _>(Uuid::new_long([c; 16]), &[0, 0])
+                        .add_characteristic_ro::<[u8; 2], _>(Uuid::from([c; 16]), &[0, 0])
                         .build();
                 }
             }
             // Now add the service at the end, contents don't really matter.
             {
                 table.add_service(Service {
-                    uuid: Uuid::new_long([8; 16]),
+                    uuid: Uuid::from([8; 16]),
                 });
             }
 

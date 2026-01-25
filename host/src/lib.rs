@@ -319,7 +319,7 @@ pub enum Error {
     ExtendedAdvertisingNotSupported,
 
     /// Invalid UUID length.
-    InvalidUuidLength(usize),
+    InvalidUuidLength,
 
     /// Error decoding advertisement data.
     Advertisement(AdvertisementDataError),
@@ -353,6 +353,12 @@ pub enum Error {
     GattSubscriberLimitReached,
     /// Other error.
     Other,
+}
+
+impl From<bt_hci::uuid::InvalidLengthError> for Error {
+    fn from(value: bt_hci::uuid::InvalidLengthError) -> Self {
+        Self::InvalidUuidLength
+    }
 }
 
 impl<E> From<Error> for BleHostError<E> {

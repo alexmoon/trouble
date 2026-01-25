@@ -781,7 +781,7 @@ impl<'reference, C: Controller, P: PacketPool, const MAX_SERVICES: usize> GattCl
                 start_handle: start,
                 end_handle: 0xffff,
                 att_type: PRIMARY_SERVICE.into(),
-                att_value: uuid.as_raw(),
+                att_value: uuid.as_le_slice(),
             };
 
             let response = self.request(data).await?;
@@ -801,7 +801,7 @@ impl<'reference, C: Controller, P: PacketPool, const MAX_SERVICES: usize> GattCl
                         let svc = ServiceHandle {
                             start: handle,
                             end,
-                            uuid: uuid.clone(),
+                            uuid: *uuid,
                         };
                         result.push(svc.clone()).map_err(|_| Error::InsufficientSpace)?;
                         self.known_services
@@ -1043,7 +1043,7 @@ impl<'reference, C: Controller, P: PacketPool, const MAX_SERVICES: usize> GattCl
         let data = att::AttReq::ReadByType {
             start: service.start,
             end: service.end,
-            attribute_type: uuid.clone(),
+            attribute_type: *uuid,
         };
 
         let response = self.request(data).await?;

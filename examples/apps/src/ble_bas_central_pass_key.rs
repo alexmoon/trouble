@@ -83,12 +83,12 @@ where
 
         let _ = join(client.task(), async {
             info!("Looking for battery service");
-            let services = client.services_by_uuid(&Uuid::new_short(0x180f)).await.unwrap();
+            let services = client.services_by_uuid(&Uuid::from_u16(0x180f)).await.unwrap();
             let service = services.first().unwrap().clone();
 
             info!("Looking for value handle");
             let c: Characteristic<u8> = client
-                .characteristic_by_uuid(&service, &Uuid::new_short(0x2a19))
+                .characteristic_by_uuid(&service, &Uuid::from_u16(0x2a19))
                 .await
                 .unwrap();
 

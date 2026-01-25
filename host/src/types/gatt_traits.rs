@@ -195,13 +195,13 @@ impl AsGatt for crate::types::uuid::Uuid {
     const MAX_SIZE: usize = 16;
 
     fn as_gatt(&self) -> &[u8] {
-        self.as_raw()
+        self.as_le_slice()
     }
 }
 
 impl FromGatt for crate::types::uuid::Uuid {
     fn from_gatt(data: &[u8]) -> Result<Self, FromGattError> {
-        Self::try_from(data).map_err(|_| FromGattError::InvalidLength)
+        Self::from_le_slice(data).map_err(|_| FromGattError::InvalidLength)
     }
 }
 

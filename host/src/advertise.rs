@@ -420,13 +420,13 @@ impl AdStructure<'_> {
             AdStructure::ServiceUuids16(uuids) => {
                 w.append(&[(uuids.len() * 2 + 1) as u8, 0x02])?;
                 for uuid in uuids.iter() {
-                    w.write_ref(&Uuid::Uuid16(*uuid))?;
+                    w.write_ref(&Uuid::from(*uuid))?;
                 }
             }
             AdStructure::ServiceUuids128(uuids) => {
                 w.append(&[(uuids.len() * 16 + 1) as u8, 0x07])?;
                 for uuid in uuids.iter() {
-                    w.write_ref(&Uuid::Uuid128(*uuid))?;
+                    w.write_ref(&Uuid::from(*uuid))?;
                 }
             }
             AdStructure::ShortenedLocalName(name) => {
@@ -439,7 +439,7 @@ impl AdStructure<'_> {
             }
             AdStructure::ServiceData16 { uuid, data } => {
                 w.append(&[(data.len() + 3) as u8, 0x16])?;
-                w.write(Uuid::Uuid16(*uuid))?;
+                w.write(Uuid::from(*uuid))?;
                 w.append(data)?;
             }
             AdStructure::ManufacturerSpecificData {

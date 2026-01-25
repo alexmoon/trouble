@@ -40,13 +40,13 @@ impl FromMeta for Uuid {
 impl quote::ToTokens for Uuid {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         match self {
-            Uuid::Uuid16(u) => tokens.extend(quote!(::trouble_host::types::uuid::Uuid::new_short(#u))),
+            Uuid::Uuid16(u) => tokens.extend(quote!(::trouble_host::types::uuid::Uuid::from_u16(#u))),
             Uuid::Uuid128(u) => {
                 let mut s = TokenStream2::new();
                 for b in u {
                     s.extend(quote!(#b,))
                 }
-                tokens.extend(quote!(::trouble_host::types::uuid::Uuid::new_long([#s])));
+                tokens.extend(quote!(::trouble_host::types::uuid::Uuid::from([#s])));
             }
         }
     }

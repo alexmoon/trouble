@@ -470,7 +470,7 @@ impl<'d> FindInformationIter<'d> {
         if self.cursor.available() >= 2 + uuid_len {
             let res = (|| {
                 let handle: u16 = self.cursor.read()?;
-                let uuid = Uuid::try_from(self.cursor.slice(uuid_len)?)?;
+                let uuid = Uuid::from_le_slice(self.cursor.slice(uuid_len)?)?;
                 Ok((handle, uuid))
             })();
             Some(res)
@@ -539,7 +539,7 @@ impl<'d> AttRsp<'d> {
                 let mut it = it.clone();
                 while let Some(Ok((handle, uuid))) = it.next() {
                     w.write(handle)?;
-                    w.append(uuid.as_raw())?;
+                    w.append(uuid.as_le_slice())?;
                 }
             }
             Self::Error { request, handle, code } => {
@@ -701,7 +701,7 @@ impl<'d> AttReq<'d> {
                 start,
                 end,
                 attribute_type,
-            } => 4 + attribute_type.as_raw().len(),
+            } => 4 + attribute_type.as_le_slice().len(),
             Self::Read { .. } => 2,
             Self::ReadBlob { .. } => 4, // handle (2 bytes) + offset (2 bytes)
             Self::Write { handle, data } => 2 + data.len(),
@@ -772,10 +772,10 @@ impl<'d> AttReq<'d> {
                 let end_handle = (payload[2] as u16) + ((payload[3] as u16) << 8);
 
                 let group_type = if payload.len() == 6 {
-                    Uuid::Uuid16([payload[4], payload[5]])
+                    Uuid::from([payload[4], payload[5]])
                 } else if payload.len() == 20 {
-                    let uuid = payload[4..21].try_into().map_err(|_| codec::Error::InvalidValue)?;
-                    Uuid::Uuid128(uuid)
+                    let uuid: [u8; 16] = payload[4..21].try_into().map_err(|_| codec::Error::InvalidValue)?;
+                    Uuid::from(uuid)
                 } else {
                     return Err(codec::Error::InvalidValue);
                 };
@@ -791,10 +791,10 @@ impl<'d> AttReq<'d> {
                 let end_handle = (payload[2] as u16) + ((payload[3] as u16) << 8);
 
                 let attribute_type = if payload.len() == 6 {
-                    Uuid::Uuid16([payload[4], payload[5]])
+                    Uuid::from([payload[4], payload[5]])
                 } else if payload.len() == 20 {
-                    let uuid = payload[4..20].try_into().map_err(|_| codec::Error::InvalidValue)?;
-                    Uuid::Uuid128(uuid)
+                    let uuid: [u8; 16] = payload[4..20].try_into().map_err(|_| codec::Error::InvalidValue)?;
+                    Uuid::from(uuid)
                 } else {
                     return Err(codec::Error::InvalidValue);
                 };
